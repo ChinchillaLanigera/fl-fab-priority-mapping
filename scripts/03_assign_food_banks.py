@@ -122,11 +122,11 @@ regional_summary = (
     .agg(
         county_count=(county_col, "count"),
         total_driving_lila_tracts=("driving_lila_tracts", "sum"),
-        avg_priority_score=("fab_priority_score", "mean"),
+        avg_expected_impact_score=("fab_expected_impact_score", "mean"),
         total_direct_markets=("direct_market_count", "sum"),
     )
     .reset_index()
-    .sort_values(by="avg_priority_score", ascending=False)
+    .sort_values(by="avg_expected_impact_score", ascending=False)
 )
 
 print("=====================================================================")
@@ -144,11 +144,11 @@ print(
     f" ({county_col}):"
 )
 print(
-    df.sort_values(by="fab_priority_score", ascending=False)[
+    df.sort_values(by="fab_expected_impact_score", ascending=False)[
         [
             county_col,
             "food_bank_partner",
-            "fab_priority_score",
+            "fab_expected_impact_score",
             "Strategy_Typology",
         ]
     ]

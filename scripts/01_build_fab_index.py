@@ -129,10 +129,14 @@ df_fl["P_Poverty"] = df_fl[poverty_col].rank(pct=True) * 100
 df_fl["LILA_Flag"] = df_fl[lila_col].fillna(0).astype(int)
 
 # Composite Index Starter
+# --- UPDATED CODE: Focus on Target Demand Proportion ---
+# 50% Target Proportion: Rewards tracts where 25-45%+ of households are on SNAP
+# 25% Economic Depth: Poverty rate
+# 25% Physical Friction: Driving-distance supermarket access barrier (1 & 10 miles)
 df_fl["FAB_Need_Score"] = (
-    0.40 * df_fl["P_SNAP"]
-    + 0.30 * df_fl["P_Poverty"]
-    + 0.30 * (df_fl["LILA_Flag"] * 100)
+    0.50 * df_fl["P_SNAP"]
+    + 0.25 * df_fl["P_Poverty"]
+    + 0.25 * (df_fl["LILA_Flag"] * 100)
 )
 
 # --- Step 3: Roll Up to County Summary ---
@@ -146,6 +150,8 @@ county_summary = (
     .agg(
         total_pop=(pop_col, "sum"),
         total_lila_tracts=("LILA_Flag", "sum"),
+        total_tracts=(tract_col, "count"),
+        high_snap_tracts=("SNAP_Rate", lambda x: (x >= 0.30).sum()),
         avg_poverty_rate=(poverty_col, "mean"),
         avg_snap_rate=("SNAP_Rate", "mean"),
         county_fab_score=("FAB_Need_Score", "mean"),

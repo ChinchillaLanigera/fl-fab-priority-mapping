@@ -18,26 +18,42 @@ Traditional food access analyses often rely on raw population counts, which disp
 
 ### Scoring Formula
 
-Each Florida census tract is evaluated using a composite **FAB Need Score** ($0\text{–}100$) based on relative need and driving-distance access barriers:
+Each Florida census tract receives a composite **FAB Need Score** ($0\text{–}100$):
 
-$$\text{FAB Need Score} = 0.40 \cdot P_{\text{SNAP}} + 0.30 \cdot P_{\text{Poverty}} + 0.30 \cdot (\text{LILA}_{\text{Driving}} \times 100)$$
+$$\text{FAB Need Score} = 0.50 \cdot P_{\text{SNAP}} + 0.25 \cdot P_{\text{Poverty}} + 0.25 \cdot (\text{LILA}_{\text{Driving}} \times 100)$$
 
 * $P_{\text{SNAP}}$: Percentile rank of the tract's estimated household SNAP participation rate ($0\text{–}100$). Estimated households are calculated as population divided by 2.5.
 * $P_{\text{Poverty}}$: Percentile rank of tract poverty rate ($0\text{–}100$).
 * $\text{LILA}_{\text{Driving}}$: Binary indicator ($1$ or $0$) from the USDA Food Access Research Atlas denoting Low Income and Low Access based on driving distances (10-mile threshold in rural areas, 1-mile in urban areas).
 
-The county **FAB Priority Score** is the unweighted average of its tract FAB Need Scores. A higher score means greater relative need compared with other Florida counties; it is not population-weighted. Direct-market capacity is used separately to classify counties into actionable programmatic typologies.
+The county **FAB Priority Score** is the unweighted average of its tract FAB Need Scores. The county **FAB Expected Impact Score** is a separate, county-level planning measure. Each input is percentile-ranked across Florida counties, then weighted:
 
----
+$$\begin{aligned}
+\text{FAB Expected Impact Score} =\;&
+0.45 \cdot P_{\text{SNAP Rate}}
+&&\text{(Pillar 1: Target Proportion)}\\
+&+ 0.20 \cdot P_{\text{Poverty}}
+&&\text{(Pillar 1b: Economic Hardship Depth)}\\
+&+ 0.15 \cdot P_{\text{Driving Friction}}
+&&\text{(Pillar 2: Geographic Food Access Barrier)}\\
+&+ 0.20 \cdot P_{\text{Direct Market Capacity}}
+&&\text{(Pillar 3: Point-of-Sale Feasibility)}
+\end{aligned}$$
+
+* **Target Proportion (45%):** The county's average estimated household SNAP participation rate, ranked against other counties. This gives greater weight to places where SNAP participation is a larger share of the community, rather than simply favoring counties with more residents. SNAP participation is a planning indicator; it is not an individual eligibility determination.
+* **Economic Hardship Depth (20%):** The county's average tract poverty rate, percentile-ranked. Poverty remains in the score as a distinct hardship signal, but at a lower weight than SNAP participation to limit overlap between related measures.
+* **Geographic Food Access Barrier (15%):** The share of county census tracts flagged as low-income and low-access under USDA's driving-distance measure, percentile-ranked. The thresholds are more than 1 mile to a supermarket in urban areas and more than 10 miles in rural areas. Using the tract share accounts for county size; the lower weight keeps this binary geographic flag from outweighing demand and retail readiness.
+* **Point-of-Sale Feasibility (20%):** SNAP-authorized direct-market outlets per 10,000 estimated SNAP households, percentile-ranked. This rewards counties with more existing direct-market capacity where FAB can be used, while market availability also informs the action profile for counties without a listed market.
+
+The score is a relative ranking aid, not a forecast of redemptions or proof that a particular county will produce greater impact. Its market-capacity component intentionally values existing point-of-sale readiness; a high-need county with no direct market may therefore have lower feasibility on this component, while the strategy label can identify a grocery gap or mobile-route opportunity. The highest 40% of expected-impact scores are classified as **High Need**. Below that cutoff, counties with a listed direct market are **Low Need** and counties without one are **Medium Need**.
 
 ## County Need Categories
 
-The highest 40% of counties by FAB Priority Score are classified as **High Need**. The remaining counties are split by whether the retailer dataset lists any SNAP-authorized `Farmers and Markets` in the county:
-
-* **High Need — Mobile Produce Route Needed (Zero Direct Markets):** Among the highest-priority counties, these have no listed direct-market outlets and may need mobile produce, pop-up markets, or other supply partnerships.
-* **High Need — Onboard / Expand Existing SNAP Markets:** Among the highest-priority counties, these have at least one listed direct-market outlet and may offer opportunities to expand FAB participation.
-* **Medium Need — Retail Scarcity / Monitor:** Counties below the high-need cutoff with no listed direct-market outlets.
-* **Low Need — Baseline Coverage Adequate:** Counties below the high-need cutoff with at least one listed direct-market outlet.
+* **High Impact Potential: Active Markets Ready for FAB Onboarding:** High-priority counties with at least one listed direct-market outlet.
+* **High Need Produce Gap: Supermarkets Present, Zero Farm Outlets:** High-priority counties with grocers but no listed direct-market outlets.
+* **High Need Food Desert: Zero Farm Outlets, Grocery Scarcity:** High-priority counties with neither listed direct-market outlets nor grocers.
+* **Moderate Need: Direct-Market Baseline Present:** Counties below the high-priority cutoff with a listed direct-market outlet.
+* **Moderate Need: Retail Deficit / Monitor:** Counties below the high-priority cutoff with no listed direct-market outlet.
 
 These are planning categories based on relative county need and the available retailer data, not a measure of program eligibility or a guarantee of adequate food access.
 
@@ -82,8 +98,8 @@ The analytical pipeline is executed sequentially via Python scripts in the `scri
 2. **`scripts/02_map_retail_gaps.py`**:
    * Ingests the USDA FNS SNAP Retailer dataset.
    * Enforces canonical county string normalization to eliminate punctuation, spacing, and name mismatches (e.g., `MIAMI-DADE` vs. `MIAMI DADE`, `ST. JOHNS` vs. `ST JOHNS`).
-   * Filters the Florida retailer extract on its `Store_Type` category `Farmers and Markets` while excluding other store categories.
-   * Assigns strategic action typologies and exports `fl_county_fab_strategy.csv`.
+   * Counts direct markets, full-line grocers, convenience/fringe retailers, and total SNAP retailers by county.
+   * Computes direct-market capacity per 10,000 estimated SNAP households, percentile-ranks the four impact components, assigns need tiers and action profiles, and exports `fl_county_fab_strategy.csv`.
 
 3. **`scripts/03_assign_food_banks.py`**:
    * Maps all 67 Florida counties to their official Feeding Florida regional food bank territory crosswalk.
@@ -91,7 +107,7 @@ The analytical pipeline is executed sequentially via Python scripts in the `scri
 
 4. **`scripts/04_build_interactive_map.py`**:
    * Fetches county boundary GeoJSON geometries and pairs them with priority metrics.
-   * Renders a standalone, interactive Plotly choropleth map with customized hovertool diagnostics.
+   * Renders an interactive Plotly map with county impact scores, tract-level context, and independently toggleable farm-market, grocer, and fringe layers.
    * Exports `outputs/florida_fab_priority_map.html` and root `index.html` for GitHub Pages hosting.
 
 ---
