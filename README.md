@@ -1,6 +1,6 @@
-# Florida Fresh Access Bucks (FAB) Expansion Priority Index
+# Florida FAB Expansion Priority Index
 
-An open-source geospatial analytics and prioritization pipeline designed to guide the geographic expansion of the **Fresh Access Bucks (FAB)** nutrition incentive program across Florida. Administered statewide by **Feeding Florida** (Florida's network of 9 Feeding America member food banks) and supported by USDA GusNIP funding, FAB provides a dollar-for-dollar match for SNAP participants purchasing Florida-grown fruits and vegetables at direct-to-consumer outlets (farmers markets, farm stands, mobile markets, and CSAs).
+An open-source geospatial analytics and prioritization pipeline designed to guide the geographic expansion of the **FAB** nutrition incentive program across Florida. Administered statewide by **Feeding Florida** (Florida's network of 9 Feeding America member food banks) and supported by USDA GusNIP funding, FAB provides a dollar-for-dollar match for SNAP participants purchasing Florida-grown fruits and vegetables at direct-to-consumer outlets (farmers markets, farm stands, mobile markets, and CSAs).
 
 This repository models community need, transit friction, and retail infrastructure across all 67 Florida counties and census tracts to identify high-priority zones for market onboarding and mobile produce interventions.
 
@@ -12,33 +12,34 @@ Traditional food access analyses often rely on raw population counts, which disp
 
 1. **Rate-Based Intensity Over Raw Counts:** Need metrics are normalized by population denominators (e.g., household SNAP participation rates rather than raw counts of SNAP recipients). This establishes geographic equity, allowing high-intensity rural communities (where 15–25% of households rely on SNAP) to compete fairly against large metro areas.
 2. **Driving-Distance Friction (SRAM/LRAM):** Access barriers are evaluated through the USDA Economic Research Service (ERS) Food Access Research Atlas driving-distance metrics (`DD_SRAM_LILATracts_1And10`) rather than walking-distance measures alone. In rural and peri-urban Florida, physical road-transit distance to full-service supermarkets is the defining barrier to fresh produce.
-3. **Official Administrative Store Classifications:** Rather than relying on fragile name-based keyword matching (which misclassifies commercial supermarket chains like *Publix Super Market* or *Walmart Neighborhood Market* as direct farm markets), the pipeline filters the USDA FNS SNAP Retailer Database strictly by official, audited store types:
-   * `Farmers' Market`
-   * `Direct Marketing Farmer` (farm stands, CSAs, mobile farm trucks, on-farm markets)
+3. **Official Administrative Store Classifications:** Rather than relying on fragile name-based keyword matching (which misclassifies commercial supermarket chains like *Publix Super Market* or *Walmart Neighborhood Market* as direct farm markets), the pipeline filters the USDA FNS SNAP Retailer Database by the `Farmers and Markets` store category present in the Florida retailer extract.
 
 ---
 
 ### Scoring Formula
 
-Each Florida census tract is evaluated using a composite **FAB Need Score** ($0\text{–}100$) based on percentile-ranked socioeconomic indicators and transit barriers:
+Each Florida census tract is evaluated using a composite **FAB Need Score** ($0\text{–}100$) based on relative need and driving-distance access barriers:
 
-$$\text{FAB Need Score} = 0.50 \cdot P_{\text{SNAP}} + 0.30 \cdot P_{\text{Poverty}} + 0.20 \cdot (\text{LILA}_{\text{Driving}} \times 100)$$
+$$\text{FAB Need Score} = 0.40 \cdot P_{\text{SNAP}} + 0.30 \cdot P_{\text{Poverty}} + 0.30 \cdot (\text{LILA}_{\text{Driving}} \times 100)$$
 
-* $P_{\text{SNAP}}$: Percentile rank of tract household SNAP participation rate ($0\text{–}100$).
+* $P_{\text{SNAP}}$: Percentile rank of the tract's estimated household SNAP participation rate ($0\text{–}100$). Estimated households are calculated as population divided by 2.5.
 * $P_{\text{Poverty}}$: Percentile rank of tract poverty rate ($0\text{–}100$).
 * $\text{LILA}_{\text{Driving}}$: Binary indicator ($1$ or $0$) from the USDA Food Access Research Atlas denoting Low Income and Low Access based on driving distances (10-mile threshold in rural areas, 1-mile in urban areas).
 
-County-level scores aggregate tract scores weighted by need and transit friction, integrated with direct-market capacity to classify counties into actionable programmatic typologies.
+The county **FAB Priority Score** is the unweighted average of its tract FAB Need Scores. A higher score means greater relative need compared with other Florida counties; it is not population-weighted. Direct-market capacity is used separately to classify counties into actionable programmatic typologies.
 
 ---
 
-## Strategic Action Typologies
+## County Need Categories
 
-Counties in the upper 40th percentile of priority scores are categorized into two primary intervention tiers:
+The highest 40% of counties by FAB Priority Score are classified as **High Need**. The remaining counties are split by whether the retailer dataset lists any SNAP-authorized `Farmers and Markets` in the county:
 
-* **Tier 1: Mobile Produce Route Needed (High Need, Zero Direct Retail):** High SNAP intensity combined with zero USDA-authorized direct-market produce outlets. In these areas, conventional farmers market matches are impossible without external supply interventions; they require mobile produce trucks, pop-up markets, or community grocery pilots (e.g., the *Florida Fresh Dollars* model). Top examples include **DeSoto, Putnam, Hardee, Okeechobee, Liberty, and Gadsden counties**.
-* **Tier 1: Onboard / Expand Existing SNAP Outlets:** High SNAP intensity with at least one active SNAP-authorized direct agricultural market. These locations offer immediate turn-key opportunities to activate FAB's dollar-for-dollar produce match. Examples include **Highlands, Citrus, and Jefferson counties**.
-* **Tier 2: Baseline Coverage / Monitor:** Moderate relative need or existing baseline coverage.
+* **High Need — Mobile Produce Route Needed (Zero Direct Markets):** Among the highest-priority counties, these have no listed direct-market outlets and may need mobile produce, pop-up markets, or other supply partnerships.
+* **High Need — Onboard / Expand Existing SNAP Markets:** Among the highest-priority counties, these have at least one listed direct-market outlet and may offer opportunities to expand FAB participation.
+* **Medium Need — Retail Scarcity / Monitor:** Counties below the high-need cutoff with no listed direct-market outlets.
+* **Low Need — Baseline Coverage Adequate:** Counties below the high-need cutoff with at least one listed direct-market outlet.
+
+These are planning categories based on relative county need and the available retailer data, not a measure of program eligibility or a guarantee of adequate food access.
 
 All 67 counties are mapped directly to their regional **Feeding Florida 9-member food bank territory** (e.g., Feeding Tampa Bay, Feeding South Florida, Second Harvest of the Big Bend, All Faiths Food Bank) to align priority rankings directly with local operational footprints.
 
@@ -81,7 +82,7 @@ The analytical pipeline is executed sequentially via Python scripts in the `scri
 2. **`scripts/02_map_retail_gaps.py`**:
    * Ingests the USDA FNS SNAP Retailer dataset.
    * Enforces canonical county string normalization to eliminate punctuation, spacing, and name mismatches (e.g., `MIAMI-DADE` vs. `MIAMI DADE`, `ST. JOHNS` vs. `ST JOHNS`).
-   * Applies administrative filtering on `Store_Type` (`Farmers' Market`, `Direct Marketing Farmer`) while excluding commercial chain grocers.
+   * Filters the Florida retailer extract on its `Store_Type` category `Farmers and Markets` while excluding other store categories.
    * Assigns strategic action typologies and exports `fl_county_fab_strategy.csv`.
 
 3. **`scripts/03_assign_food_banks.py`**:

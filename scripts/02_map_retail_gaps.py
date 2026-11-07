@@ -52,10 +52,10 @@ else:
   df_fl = df_retail[df_retail[state_col].astype(str).str.upper() == "FL"].copy()
 
   county_col = next(c for c in df_fl.columns if "county" in c)
-  type_col = next(c for c in df_fl.columns if "type" in c or "store" in c)
+  type_col = next(c for c in df_fl.columns if c == "store_type")
 
-  # ZERO KEYWORDS: Rely purely on USDA's official direct-to-consumer store types
-  usda_direct_types = ["farmers' market", "direct marketing farmer"]
+  # Count the category used in this retailer extract for farm markets.
+  usda_direct_types = ["farmers and markets"]
 
   df_fl["store_type_clean"] = df_fl[type_col].astype(str).str.strip().str.lower()
   df_direct = df_fl[df_fl["store_type_clean"].isin(usda_direct_types)].copy()
@@ -94,14 +94,14 @@ score_threshold = county_df["fab_priority_score"].quantile(0.60)
 def classify_strategy(row):
   if row["fab_priority_score"] >= score_threshold:
     if row["direct_market_count"] > 0:
-      return "Tier 1: Onboard / Expand Existing SNAP Markets"
+      return "High Need: Onboard / Expand Existing SNAP Markets"
     else:
-      return "Tier 1: Mobile Produce Route Needed (Zero Direct Markets)"
+      return "High Need: Mobile Produce Route Needed (Zero Direct Markets)"
   else:
     if row["direct_market_count"] == 0:
-      return "Tier 2: Retail Scarcity / Monitor"
+      return "Medium Need: Retail Scarcity / Monitor"
     else:
-      return "Tier 2: Baseline Coverage Adequate"
+      return "Low Need: Baseline Coverage Adequate"
 
 
 county_df["Strategy_Typology"] = county_df.apply(classify_strategy, axis=1)
