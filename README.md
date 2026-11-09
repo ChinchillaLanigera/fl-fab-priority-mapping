@@ -79,7 +79,9 @@ The analytical pipeline is executed sequentially via Python scripts in the `scri
 │   ├── 01_build_fab_index.py
 │   ├── 02_map_retail_gaps.py
 │   ├── 03_assign_food_banks.py
-│   └── 04_build_interactive_map.py
+│   ├── 04_build_interactive_map.py
+│   ├── 05_add_methodology_panel.py
+│   └── 06_add_empirical_tab.py
 ├── outputs/
 │   ├── florida_fab_priority_map.html
 │   └── fab_county_strategy_brief.md
@@ -108,7 +110,17 @@ The analytical pipeline is executed sequentially via Python scripts in the `scri
 4. **`scripts/04_build_interactive_map.py`**:
    * Fetches county boundary GeoJSON geometries and pairs them with priority metrics.
    * Renders an interactive Plotly map with county impact scores, tract-level context, and independently toggleable farm-market, grocer, and fringe layers.
-   * Exports `outputs/florida_fab_priority_map.html` and root `index.html` for GitHub Pages hosting.
+   * Exports the base `outputs/florida_fab_priority_map.html` and root `index.html`.
+
+5. **`scripts/05_add_methodology_panel.py`**:
+   * Adds the data architecture and methodology tab, including the scoring and market-density equations.
+   * Updates both generated HTML files.
+
+6. **`scripts/06_add_empirical_tab.py`**:
+   * Adds the empirical-weighting tab and its target, Elastic Net, and feature-weight equations.
+   * Updates both generated HTML files. Run after script 05.
+
+The map uses LaTeX delimiters for displayed equations and MathJax 3 (loaded from jsDelivr) to render them. Viewing the rendered formulas requires an internet connection; the underlying map and content remain available if the MathJax library cannot load.
 
 ---
 

@@ -424,6 +424,32 @@ need_cards = "".join([
     ),
 ])
 
+mathjax_loader = """  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['\\\\(', '\\\\)']],
+        displayMath: [['\\\\[', '\\\\]']]
+      },
+      chtml: { scale: 1.05 }
+    };
+  </script>
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+"""
+
+impact_formula_html = r"""
+        <div class="formula math-display">
+          \[
+          \begin{aligned}
+          \text{FAB Expected Impact Score} ={}&
+          0.45\,P_{\text{SNAP Rate}} &&\text{(Target Proportion)}\\
+          &+ 0.20\,P_{\text{Poverty}} &&\text{(Economic Hardship Depth)}\\
+          &+ 0.15\,P_{\text{Driving Friction}} &&\text{(Geographic Food Access Barrier)}\\
+          &+ 0.20\,P_{\text{Direct Market Capacity}} &&\text{(Point-of-Sale Feasibility)}
+          \end{aligned}
+          \]
+        </div>
+"""
+
 html_page = f"""<!doctype html>
 <html lang="en">
 <head>
@@ -431,6 +457,7 @@ html_page = f"""<!doctype html>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#123b32">
   <title>Florida FAB | Priority Navigator</title>
+{mathjax_loader}
   <style>
     :root {{
       color-scheme: light;
@@ -477,7 +504,8 @@ html_page = f"""<!doctype html>
     }}
     .weight strong {{ display: block; margin-bottom: 3px; color: #175541; font-size: 11px; }}
     .weight p {{ margin: 4px 0 0; font-size: 10px; line-height: 1.5; }}
-    .formula {{ font-family: "Segoe UI", Arial, sans-serif; font-weight: 650; }}
+    .formula {{ margin: 0; color: #173c32; font-weight: 650; }}
+    .math-display {{ overflow-x: auto; padding: 4px 0; }}
     .fine-print {{ color: #6a7b74 !important; font-size: 11px !important; }}
     .panel {{
       overflow: hidden; background: #fff; border: 1px solid #e1e9e5;
@@ -579,7 +607,7 @@ html_page = f"""<!doctype html>
         <p>The score ranks counties by a combination of SNAP participation, poverty, driving-distance access barriers, and direct-market readiness. Higher scores indicate stronger potential for FAB impact based on these factors.</p>
       </div>
       <div class="score-details">
-        <p class="formula">Expected Impact = 45% × SNAP Rate Rank + 20% × Poverty Rank + 15% × Driving-Frictions Rank + 20% × Direct-Market Capacity Rank</p>
+        {impact_formula_html}
         <div class="weights" aria-label="Score components">
           <div class="weight">
             <strong>Pillar 1 · Target Proportion · 45%</strong>
